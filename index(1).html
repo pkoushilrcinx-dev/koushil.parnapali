@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pay Safe Challenge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+<div class="page">
+  <nav class="navbar glass">
+    <span class="brand" id="brandText">PAY SAFE CHALLENGE</span>
+    <div class="tabs" id="tabs">
+      <div class="tab-indicator" id="tabIndicator"></div>
+      <button class="tab-btn" data-tab="cases">Cases</button>
+      <button class="tab-btn" data-tab="results">Judges Panel</button>
+    </div>
+  </nav>
+
+  <div class="wrap" id="app"></div>
+  <footer class="foot">A guided exercise in separating relevant evidence from noise.</footer>
+</div>
+
+<script>
+const CASES = [
+  { id:1, level:"Easy", title:"The Missing Payment",
+    scenario:"Riya purchases a ₹2,500 smartphone online. Her bank account shows that ₹2,500 was deducted, but the shopping website says “Payment Failed.” The seller claims they never received the money.",
+    evidence:[
+      {id:"E1", text:"Bank statement showing ₹2,500 debit", answer:"relevant"},
+      {id:"E2", text:"Payment gateway transaction status showing “Failed”", answer:"relevant"},
+      {id:"E3", text:"Screenshot of the phone model advertised on the website", answer:"irrelevant"},
+      {id:"E4", text:"Transaction ID generated during payment", answer:"relevant"},
+      {id:"E5", text:"Riya's phone brand and model", answer:"irrelevant"},
+      {id:"E6", text:"Bank's transaction/refund status", answer:"relevant"},
+    ],
+    rationale:"These records directly address whether the payment was processed and what happened to the money." },
+
+  { id:2, level:"Easy", title:"The Fake Payment Screenshot",
+    scenario:"A customer purchases ₹8,000 worth of products from a small business. The customer sends a screenshot claiming that the payment was successful. However, the seller's bank account has received nothing.",
+    evidence:[
+      {id:"E1", text:"Screenshot of the customer's payment confirmation", answer:"relevant"},
+      {id:"E2", text:"Seller's bank statement for the transaction date", answer:"relevant"},
+      {id:"E3", text:"Transaction/reference number shown in the payment screenshot", answer:"relevant"},
+      {id:"E4", text:"Customer's social-media profile picture", answer:"irrelevant"},
+      {id:"E5", text:"Bank/payment gateway confirmation of successful settlement", answer:"relevant"},
+      {id:"E6", text:"Colour of the customer's phone case", answer:"irrelevant"},
+    ],
+    rationale:"A screenshot is evidence, but it does not independently prove that the seller actually received the money." },
+
+  { id:3, level:"Average", title:"The QR Code Payment",
+    scenario:"A café displays a QR code for payment. A customer scans it and pays ₹1,200. Later, the café discovers that the money went to an unexpected account.",
+    evidence:[
+      {id:"E1", text:"Photograph of the QR code displayed at the café", answer:"relevant"},
+      {id:"E2", text:"Payment receipt showing the recipient/account name", answer:"relevant"},
+      {id:"E3", text:"Bank statement showing the ₹1,200 debit", answer:"relevant"},
+      {id:"E4", text:"Customer's favourite café food", answer:"irrelevant"},
+      {id:"E5", text:"QR-code/UPI transaction ID", answer:"relevant"},
+      {id:"E6", text:"Café's electricity bill", answer:"irrelevant"},
+      {id:"E7", text:"Screenshot showing the account/UPI ID encoded in the QR", answer:"relevant"},
+    ],
+    rationale:"The evidence should establish where the QR directed the payment and trace the transaction." },
+
+  { id:4, level:"Average", title:"The Subscription Trap",
+    scenario:"Arjun signs up for a ₹99 introductory subscription. The website says the first month costs ₹99. One month later, ₹999 is automatically deducted from his account.",
+    evidence:[
+      {id:"E1", text:"Original subscription page showing the ₹99 introductory price", answer:"relevant"},
+      {id:"E2", text:"Terms describing the recurring subscription charge", answer:"relevant"},
+      {id:"E3", text:"Bank statement showing ₹999 deduction", answer:"relevant"},
+      {id:"E4", text:"Arjun's laptop model", answer:"irrelevant"},
+      {id:"E5", text:"Email confirming subscription activation", answer:"relevant"},
+      {id:"E6", text:"Screenshot of the company's logo", answer:"irrelevant"},
+      {id:"E7", text:"Cancellation/refund policy displayed at signup", answer:"relevant"},
+    ],
+    rationale:"The relevant evidence concerns the advertised price, recurring terms, authorization/activation, and actual debit." },
+
+  { id:5, level:"Difficult", title:"The Altered Invoice",
+    scenario:"A business receives an electronic invoice for ₹48,000. The employee pays it. Later, the company discovers that the actual supplier had issued an invoice for only ₹18,000. The question is whether the ₹48,000 invoice was genuine or altered.",
+    evidence:[
+      {id:"E1", text:"Original invoice obtained directly from the supplier", answer:"relevant"},
+      {id:"E2", text:"₹48,000 payment record from the company's bank account", answer:"relevant"},
+      {id:"E3", text:"Email through which the ₹48,000 invoice was received", answer:"relevant"},
+      {id:"E4", text:"Metadata/file history of the electronic invoice, if available", answer:"relevant"},
+      {id:"E5", text:"Employee's department in the company", answer:"irrelevant"},
+      {id:"E6", text:"Supplier's original invoice number/reference", answer:"relevant"},
+      {id:"E7", text:"Screenshot of the supplier's website homepage", answer:"irrelevant"},
+      {id:"E8", text:"Email/message from the supplier confirming the actual invoice amount", answer:"relevant"},
+    ],
+    rationale:"The case requires connecting document authenticity, the payment trail, and evidence from the actual supplier." },
+
+  { id:6, level:"Difficult", weakAllowed:true, title:"The Suspicious Refund",
+    scenario:"A customer claims that an online merchant promised a ₹15,000 refund. The customer provides a screenshot saying “Refund Successful.” However, ₹15,000 has not appeared in the customer's bank account. The merchant says the refund was never processed.",
+    evidence:[
+      {id:"E1", text:"Customer's screenshot showing “Refund Successful”", answer:"relevant"},
+      {id:"E2", text:"Refund transaction/reference ID", answer:"relevant"},
+      {id:"E3", text:"Customer's bank statement covering the expected refund period", answer:"relevant"},
+      {id:"E4", text:"Merchant's refund/settlement record", answer:"relevant"},
+      {id:"E5", text:"Original purchase transaction record", answer:"relevant"},
+      {id:"E6", text:"Customer's social-media post complaining about the merchant", answer:"weak"},
+      {id:"E7", text:"Customer's phone wallpaper", answer:"irrelevant"},
+      {id:"E8", text:"Bank/payment processor confirmation of whether the refund was actually settled", answer:"relevant"},
+      {id:"E9", text:"Merchant's logo downloaded from its website", answer:"irrelevant"},
+    ],
+    rationale:"E6 is relevant as supporting context but weak on its own. The strongest approach is to follow the complete trail: original payment → refund initiated → refund reference → processor/bank settlement → customer account." }
+];
+
+const RESULTS_PASSWORD = "paysafe2026";
+const picks = {};
+const completed = {};
+let team = { name:"", member1:"", member2:"" };
+let setupError = "";
+let unlocked = false;
+let passwordError = "";
+let leaderboardSaved = false;
+let view = { screen:"setup" };
+
+function totalScore(){
+  let correct=0, total=0;
+  Object.values(completed).forEach(c=>{correct+=c.correct; total+=c.total;});
+  return {correct,total};
+}
+function teamReady(){ return team.name.trim() && team.member1.trim() && team.member2.trim(); }
+function escapeAttr(s){ return (s||'').replace(/"/g,'&quot;'); }
+function escapeHtml(s){ return (s||'').replace(/</g,'&lt;'); }
+
+function tabKey(screen){
+  if(screen === "case") return "cases";
+  if(screen === "setup") return "";
+  return screen;
+}
+function positionIndicator(){
+  const active = tabKey(view.screen);
+  const ind = document.getElementById('tabIndicator');
+  if(!ind) return;
+  const btn = active ? document.querySelector(`.tab-btn[data-tab="${active}"]`) : null;
+  if(!btn){ ind.style.opacity='0'; return; }
+  ind.style.opacity='1';
+  ind.style.width=btn.offsetWidth+"px";
+  ind.style.transform=`translateX(${btn.offsetLeft-4}px)`;
+}
+function syncTabs(){
+  const active=tabKey(view.screen);
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===active));
+  requestAnimationFrame(positionIndicator);
+}
+function updateBrand(){
+  const el=document.getElementById('brandText');
+  if(el) el.textContent=team.name ? team.name.toUpperCase() : 'PAY SAFE CHALLENGE';
+}
+function goto(screen,extra){
+  if((screen==="cases"||screen==="case"||screen==="results")&&!teamReady()) screen="setup";
+  view=Object.assign({screen},extra||{});
+  render();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function loadLeaderboard(){
+  try{
+    const raw=localStorage.getItem('psc_leaderboard');
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function saveLeaderboardEntry(entry){
+  try{
+    const list=loadLeaderboard();
+    list.push(entry);
+    list.sort((a,b)=>b.pct-a.pct||b.correct-b.correct);
+    localStorage.setItem('psc_leaderboard',JSON.stringify(list.slice(0,100)));
+  }catch(e){}
+}
+function caseScoreMap(entry){
+  return entry.caseScores || {};
+}
+function renderLeaderboardList(){
+  const list=loadLeaderboard();
+  if(!list.length) return `<p class="empty-state">No teams have completed the challenge on this device yet.</p>`;
+  return `
+    <div class="score-table-wrap">
+      <table class="score-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Team</th><th>Case 1</th><th>Case 2</th>
+            <th>Case 3</th><th>Case 4</th><th>Case 5</th><th>Case 6</th>
+            <th>Total</th><th>Accuracy</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${list.map((e,i)=>{
+            const s=caseScoreMap(e);
+            return `<tr>
+              <td>${i+1}</td>
+              <td class="team-cell">${escapeHtml(e.teamName||'Unnamed Team')}</td>
+              <td>${s[1] ?? '—'}</td><td>${s[2] ?? '—'}</td>
+              <td>${s[3] ?? '—'}</td><td>${s[4] ?? '—'}</td>
+              <td>${s[5] ?? '—'}</td><td>${s[6] ?? '—'}</td>
+              <td class="total-cell">${e.correct}/${e.total}</td>
+              <td>${e.pct}%</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function render(){
+  const app=document.getElementById('app');
+  if(view.screen==="setup") app.innerHTML=renderSetup();
+  else if(view.screen==="cases") app.innerHTML=renderCases();
+  else if(view.screen==="case") app.innerHTML=renderCaseDetail(view.caseId);
+  else if(view.screen==="results") app.innerHTML=renderResults();
+  syncTabs(); updateBrand(); attachHandlers();
+}
+
+function renderSetup(){
+  return `<section class="view hero">
+    <h1>Pay Safe<br>Challenge</h1>
+    <p class="sub">Six digital-payment disputes, shaped like real support tickets. Work with a partner to sort each piece of evidence — then submit for judging.</p>
+    <div class="stamp-row"><span class="stamp">Relevant</span><span class="stamp">Irrelevant</span><span class="stamp">Weak / Supporting</span></div>
+    <div class="about-card glass">
+      <h3>How it works</h3>
+      <p>Enter your team below, then work through all six cases together, sorting each piece of evidence. Once you submit a case your answers lock — there's no peeking at results. A judge unlocks scoring with a password once you're done.</p>
+    </div>
+    <div class="about-card glass">
+      <h3>Team Setup</h3>
+      <div class="setup-fields">
+        <div><label class="field-label">Team Name</label><input id="teamNameInput" class="name-input" type="text" placeholder="e.g. Cyber Hawks" maxlength="30" value="${escapeAttr(team.name)}"></div>
+        <div><label class="field-label">Team Member 1</label><input id="member1Input" class="name-input" type="text" placeholder="First member's name" maxlength="24" value="${escapeAttr(team.member1)}"></div>
+        <div><label class="field-label">Team Member 2</label><input id="member2Input" class="name-input" type="text" placeholder="Second member's name" maxlength="24" value="${escapeAttr(team.member2)}"></div>
+      </div>
+      ${setupError ? `<div class="error-text">${setupError}</div>`:''}
+      <div class="cta-row"><button class="btn primary" id="startBtn">Start Investigation</button></div>
+    </div>
+  </section>`;
+}
+
+function renderCases(){
+  const doneCount=Object.keys(completed).length;
+  return `<section class="view">
+    <div class="case-grid">
+      ${CASES.map(c=>{
+        const done=completed[c.id];
+        return `<div class="case-tile glass ${done?'done':''}" data-case="${c.id}">
+          <div><div class="num">CASE ${String(c.id).padStart(2,'0')}</div><div class="title">${c.title}</div></div>
+          <div class="right"><span class="lvl">${c.level.toUpperCase()}</span><span class="stat">${done?'✓ Submitted':'Open →'}</span></div>
+        </div>`;
+      }).join('')}
+    </div>
+    ${doneCount===CASES.length ? `<div class="results-cta"><button class="btn primary" id="toResults">Open Judges Panel</button></div>`:''}
+  </section>`;
+}
+
+function renderCaseDetail(caseId){
+  const c=CASES.find(x=>x.id===caseId);
+  if(!c) return `<section class="view"><p>Case not found.</p></section>`;
+  const casePicks=picks[caseId]||(picks[caseId]={});
+  const graded=!!completed[caseId];
+  const pickedCount=Object.keys(casePicks).length;
+  const allPicked=pickedCount===c.evidence.length;
+  const choiceSet=c.weakAllowed
+    ? [["relevant","Relevant"],["weak","Weak / Supporting"],["irrelevant","Irrelevant"]]
+    : [["relevant","Relevant"],["irrelevant","Irrelevant"]];
+  return `<section class="view">
+    <button class="back-link" id="backCases">← Back to case files</button>
+    <div class="brief">
+      <div class="case-tag"><span>CASE ${String(c.id).padStart(2,'0')}</span><span class="lvl-pill">${c.level}</span></div>
+      <h2>${c.title}</h2><p>${c.scenario}</p>
+    </div>
+    <div class="evidence-list">
+      ${c.evidence.map(ev=>{
+        const pick=casePicks[ev.id];
+        const isCorrect=(graded&&unlocked)?pick===ev.answer:null;
+        return `<div class="ev-tile glass">
+          <div class="ev-head"><span class="ev-id">${ev.id}</span><span class="ev-text">${ev.text}</span></div>
+          <div class="ev-choices">${choiceSet.map(([val,label])=>`<button class="choice-btn ${pick===val?'picked':''}" data-ev="${ev.id}" data-val="${val}" ${graded?'disabled':''}>${label}</button>`).join('')}</div>
+          ${(graded&&unlocked)?`<div class="verdict ${isCorrect?'correct':'incorrect'}">${isCorrect?'✓ Correct':'✕ Marked '+(pick||'—')+' — should be '+ev.answer}</div>`:''}
+        </div>`;
+      }).join('')}
+    </div>
+    ${graded ? (unlocked ? `
+      <div class="result-panel glass"><div class="score-big">${completed[c.id].correct} / ${completed[c.id].total}</div><div>Evidence correctly sorted.</div><div class="rationale">${c.rationale}</div></div>
+      <button class="btn ghost" id="backCases2">Back to case files</button>`
+      : `<div class="result-panel glass"><div class="mono locked-note">🔒 Submitted. Results are locked until a judge unlocks them.</div></div><button class="btn ghost" id="backCases2">Back to case files</button>`)
+      : `<div class="submit-bar"><span class="progress">${pickedCount} / ${c.evidence.length} marked</span><button class="btn primary" id="submitCase" ${allPicked?'':'disabled'}>Close the case</button></div>`}
+  </section>`;
+}
+
+function renderResults(){
+  if(!unlocked) return `<section class="view">
+    <div class="about-card glass judge-login">
+      <h3>🔒 Judges Panel</h3>
+      <p>Enter the judge password to view the answer key and the complete team score table.</p>
+      <div class="password-row"><input id="resultsPasswordInput" class="name-input" type="password" placeholder="Judge password"><button class="btn primary" id="unlockBtn">Open Judges Panel</button></div>
+      ${passwordError?`<div class="error-text">${passwordError}</div>`:''}
+    </div>
+  </section>`;
+
+  const {correct,total}=totalScore();
+  const pct=total?Math.round((correct/total)*100):0;
+  const attempted=Object.keys(completed).length;
+
+  return `<section class="view report">
+    <div class="judge-header">
+      <div><div class="eyebrow">JUDGES PANEL</div><h2>Team Evaluation — ${escapeHtml(team.name)||'Current Team'}</h2></div>
+      <div class="judge-current-score"><span>${correct}/${total}</span><small>Current team total</small></div>
+    </div>
+
+    <div class="final-grid">
+      ${CASES.map(c=>{
+        const d=completed[c.id];
+        return d
+          ? `<div class="final-cell glass"><div class="n">${d.correct}/${d.total}</div><div class="l">CASE ${c.id} · ${c.level.toUpperCase()}</div></div>`
+          : `<div class="final-cell glass pending"><div class="n">—</div><div class="l">CASE ${c.id} · NOT SUBMITTED</div></div>`;
+      }).join('')}
+    </div>
+
+    <div class="about-card glass">
+      <div class="section-title-row">
+        <div><h3>All Teams — Total Marks</h3><p class="section-note">Each completed team is recorded on this device.</p></div>
+        <div class="grand-total-badge">Current: ${correct}/${total} · ${pct}%</div>
+      </div>
+      ${renderLeaderboardList()}
+    </div>
+
+    <div class="about-card glass">
+      <h3>Answer Key & Rationale</h3>
+      ${CASES.map(c=>`<div class="answer-block">
+        <div class="answer-title">CASE ${String(c.id).padStart(2,'0')} · ${c.title} · ${c.level.toUpperCase()}</div>
+        ${c.evidence.map(ev=>{
+          const color=ev.answer==='relevant'?'var(--approve)':ev.answer==='irrelevant'?'var(--reject)':'var(--weak)';
+          return `<div class="judge-row"><span>${ev.id} — ${ev.text}</span><span class="judge-verdict" style="color:${color};">${ev.answer}</span></div>`;
+        }).join('')}
+        <p class="rationale">${c.rationale}</p>
+      </div>`).join('')}
+    </div>
+
+    <div class="judge-actions"><button class="btn ghost" id="backCases2">Back to case files</button></div>
+  </section>`;
+}
+
+function attachHandlers(){
+  document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>goto(btn.dataset.tab)));
+
+  const startBtn=document.getElementById('startBtn');
+  if(startBtn) startBtn.addEventListener('click',()=>{
+    const n=document.getElementById('teamNameInput').value||'';
+    const m1=document.getElementById('member1Input').value||'';
+    const m2=document.getElementById('member2Input').value||'';
+    team={name:n.trim(),member1:m1.trim(),member2:m2.trim()};
+    if(!teamReady()){setupError="Please fill in your team name and both member names.";render();return;}
+    setupError=""; goto('cases');
+  });
+
+  document.querySelectorAll('.case-tile').forEach(el=>el.addEventListener('click',()=>goto('case',{caseId:Number(el.dataset.case)})));
+  const back=document.getElementById('backCases'); if(back) back.addEventListener('click',()=>goto('cases'));
+  const back2=document.getElementById('backCases2'); if(back2) back2.addEventListener('click',()=>goto('cases'));
+  const toResults=document.getElementById('toResults'); if(toResults) toResults.addEventListener('click',()=>goto('results'));
+
+  document.querySelectorAll('.ev-tile').forEach(tile=>{
+    tile.querySelectorAll('.choice-btn').forEach(btn=>btn.addEventListener('click',()=>{
+      if(view.screen!=='case'||completed[view.caseId]) return;
+      picks[view.caseId][btn.dataset.ev]=btn.dataset.val; render();
+    }));
+  });
+
+  const submitBtn=document.getElementById('submitCase');
+  if(submitBtn) submitBtn.addEventListener('click',()=>{
+    const c=CASES.find(x=>x.id===view.caseId);
+    const cp=picks[view.caseId];
+    let correct=0;
+    c.evidence.forEach(ev=>{if(cp[ev.id]===ev.answer) correct++;});
+    completed[view.caseId]={correct,total:c.evidence.length};
+    if(Object.keys(completed).length===CASES.length){
+      const total=totalScore();
+      const pct=Math.round((total.correct/total.total)*100);
+      const caseScores={};
+      CASES.forEach(cs=>caseScores[cs.id]=completed[cs.id]?.correct||0);
+      saveLeaderboardEntry({
+        teamName:team.name,member1:team.member1,member2:team.member2,
+        correct:total.correct,total:total.total,pct,date:new Date().toLocaleDateString(),caseScores
+      });
+      leaderboardSaved=true;
+    }
+    render(); window.scrollTo({top:0,behavior:'smooth'});
+  });
+
+  const unlockBtn=document.getElementById('unlockBtn');
+  if(unlockBtn) unlockBtn.addEventListener('click',()=>{
+    const val=document.getElementById('resultsPasswordInput').value||'';
+    if(val===RESULTS_PASSWORD){unlocked=true;passwordError="";}else passwordError="Incorrect password.";
+    render();
+  });
+}
+
+window.addEventListener('resize',()=>requestAnimationFrame(positionIndicator));
+render();
+</script>
+</body>
+</html>
